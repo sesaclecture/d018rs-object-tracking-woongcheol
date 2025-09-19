@@ -22,7 +22,6 @@ l_max = 255
 a_max = 255
 b_max = 255
 
-
 def update_color_value(x, color, is_min):
     global l_min, a_min, b_min, l_max, a_max, b_max
     match color:
@@ -46,14 +45,23 @@ def update_color_value(x, color, is_min):
 
 
 def load_config(config_path):
-    # TODO: LAB-cal.json 파일을 읽어와서 전역 변수에 설정하기
-    pass
+    global l_min, a_min, b_min, l_max, a_max, b_max
+
+    with open(config_path) as f:
+        config = json.load(f)
+        l_min = config["l_min"]
+        a_min = config["a_min"]
+        b_min = config["b_min"]
+        l_max = config["l_max"]
+        a_max = config["a_max"]
+        b_max = config["b_max"]
 
 
 def save_config(config_path):
-    # TODO: 현재 설정된 전역 변수를 LAB-cal.json 파일로 저장하기
-    pass
-
+        
+    with open(str(config_path), "w") as f:
+        json.dump(save_data, f, indent=4)
+    
 
 def update_trackbar_positions():
     cv2.setTrackbarPos(TB_L_MIN, WINDOW_NAME, l_min)
@@ -65,15 +73,26 @@ def update_trackbar_positions():
 
 
 def find_biggest_contour(mask):
-    # TODO: mask 변수 값으로 부터 연결된 객체 중 가장 큰 객체 찾기
-    pass
+    # 마스크 이미지에서 외곽선들을 찾음
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        return None
+        
+    return max(contours, key=cv2.contourArea)
 
 
 def draw_boundingbox(image, contour):
-    # TODO: 가장 큰 객체에 대해 외접하는 바운딩 박스 그리기, cv2.boundingRect() 사용
-    # TODO: Rect: (x y w h) 형태로 좌표 출력, cv2.putText() 사용
-    pass
+    # 가장 큰 객체에 대해 외접하는 바운딩 박스 그리기, cv2.boundingRect() 사용
+    # Rect: (x y w h) 형태로 좌표 출력, cv2.putText() 사용
+    x, y, w, h = cv2.boundingRect(contour)
+    cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
+    text = f"Rect: ({x} {y} {w} {h})"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    
+    # 위치 (x, y), 폰트, 크기, 색상, 두께 등 지정
+    cv2.putText(image, text, (x, y - 10), font, 0.5, (0, 255, 0), 1)
 
 if __name__ == "__main__":
     # Trackbar UI
@@ -118,9 +137,8 @@ if __name__ == "__main__":
         mask = cv2.inRange(lab, lower, upper)
         masked_img = cv2.bitwise_and(img, img, mask=mask)
 
-        # IMPLEMENT ME!
         # mask 변수 값으로 부터 연결된 객체 중 가장 큰 객체 찾기
-        biggest_contour = find_biggest_contour(mask)  # Implement this function
+        biggest_contour = find_biggest_contour(mask)
 
         # 가장 큰 객체에 대해 외접하는 바운딩 박스 그리기, cv2.boundingRect() 사용
         draw_boundingbox(masked_img, biggest_contour)
@@ -141,6 +159,7 @@ if __name__ == "__main__":
                     "a_min": a_min, "a_max": a_max,
                     "b_min": b_min, "b_max": b_max
                 }
+                print(CONFIG_FILE)
                 save_config(CONFIG_FILE)
                 print(f"File saved to {CONFIG_FILE}")
             case _:
